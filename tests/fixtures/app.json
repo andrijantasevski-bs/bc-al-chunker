@@ -1,0 +1,40 @@
+{
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Address Management",
+    "publisher": "Contoso",
+    "version": "1.0.0.0",
+    "brief": "Manages customer addresses",
+    "description": "Address Management extension for Business Central",
+    "privacyStatement": "",
+    "EULA": "",
+    "help": "",
+    "url": "",
+    "logo": "",
+    "application": "25.0.0.0",
+    "platform": "25.0.0.0",
+    "runtime": "14.0",
+    "dependencies": [
+        {
+            "id": "63ca2fa4-4f03-4f2b-a480-172fef340d3f",
+            "name": "System Application",
+            "publisher": "Microsoft",
+            "version": "25.0.0.0"
+        },
+        {
+            "id": "437dbf0e-84ff-417a-965d-ed2bb9650972",
+            "name": "Base Application",
+            "publisher": "Microsoft",
+            "version": "25.0.0.0"
+        }
+    ],
+    "idRanges": [
+        {
+            "from": 50100,
+            "to": 50200
+        }
+    ],
+    "features": [
+        "TranslationFile"
+    ],
+    "target": "Cloud"
+}

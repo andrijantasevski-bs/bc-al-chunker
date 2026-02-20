@@ -29,7 +29,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from bc_al_chunker.chunker import chunk_object, chunk_objects
+from bc_al_chunker.chunker import build_app_metadata_chunk, chunk_object, chunk_objects
 from bc_al_chunker.config import ChunkingConfig
 from bc_al_chunker.models import (
     ALObject,
@@ -63,6 +63,7 @@ __all__ = [
     "ChunkMetadata",
     "ChunkType",
     "ChunkingConfig",
+    "build_app_metadata_chunk",
     "chunk",
     "chunk_object",
     "chunk_objects",
@@ -96,12 +97,25 @@ def chunk(
     """
     from bc_al_chunker.adapters.local import LocalAdapter
 
+    if config is None:
+        config = ChunkingConfig()
+
     adapter = LocalAdapter(paths)
     files = adapter.iter_al_files_sync()
     objects: list[ALObject] = []
     for rel_path, content in files:
         objects.extend(parse_source(content, file_path=rel_path))
-    return chunk_objects(objects, config)
+    result = chunk_objects(objects, config)
+
+    # Prepend app.json metadata chunk if available.
+    if config.emit_app_metadata:
+        raw_json = adapter.get_app_json_sync()
+        if raw_json is not None:
+            meta_chunk = build_app_metadata_chunk(raw_json, config)
+            if meta_chunk is not None:
+                result.insert(0, meta_chunk)
+
+    return result
 
 
 def chunk_source(
@@ -122,6 +136,9 @@ def chunk_source(
     Returns:
         A list of embedding-ready ``Chunk`` objects.
     """
+    if config is None:
+        config = ChunkingConfig()
+
     # Try sync first (cheaper, no event loop needed).
     try:
         files = source.iter_al_files_sync()
@@ -132,7 +149,20 @@ def chunk_source(
     objects: list[ALObject] = []
     for rel_path, content in files:
         objects.extend(parse_source(content, file_path=rel_path))
-    return chunk_objects(objects, config)
+    result = chunk_objects(objects, config)
+
+    # Prepend app.json metadata chunk if available.
+    if config.emit_app_metadata and hasattr(source, "get_app_json_sync"):
+        try:
+            raw_json = source.get_app_json_sync()
+        except (NotImplementedError, AttributeError):
+            raw_json = None
+        if raw_json is not None:
+            meta_chunk = build_app_metadata_chunk(raw_json, config)
+            if meta_chunk is not None:
+                result.insert(0, meta_chunk)
+
+    return result
 
 
 async def _collect_async(source: FileSource) -> list[tuple[str, str]]:

@@ -42,6 +42,20 @@ class LocalAdapter:
         for item in self.iter_al_files_sync():
             yield item
 
+    # ---- app.json ----
+
+    def get_app_json_sync(self) -> str | None:
+        """Return the content of ``app.json`` if found in any root path."""
+        for root in self._paths:
+            root = root.resolve()
+            if root.is_dir():
+                candidate = root / "app.json"
+                if candidate.is_file():
+                    return candidate.read_text(encoding="utf-8-sig")
+            elif root.is_file() and root.name.lower() == "app.json":
+                return root.read_text(encoding="utf-8-sig")
+        return None
+
     # ---- internal ----
 
     @staticmethod

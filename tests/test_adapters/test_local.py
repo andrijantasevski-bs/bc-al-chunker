@@ -52,3 +52,25 @@ class TestLocalAdapter:
         files = adapter.iter_al_files_sync()
         assert len(files) == 1
         assert files[0][0].endswith(".al")
+
+
+class TestGetAppJson:
+    """Test the get_app_json_sync method."""
+
+    def test_returns_app_json_content(self, tmp_path: Path) -> None:
+        (tmp_path / "app.json").write_text('{"name": "Test"}', encoding="utf-8")
+        adapter = LocalAdapter(tmp_path)
+        result = adapter.get_app_json_sync()
+        assert result is not None
+        assert "Test" in result
+
+    def test_returns_none_when_missing(self, tmp_path: Path) -> None:
+        adapter = LocalAdapter(tmp_path)
+        result = adapter.get_app_json_sync()
+        assert result is None
+
+    def test_fixture_dir_has_app_json(self, fixtures_dir: Path) -> None:
+        adapter = LocalAdapter(fixtures_dir)
+        result = adapter.get_app_json_sync()
+        assert result is not None
+        assert "Address Management" in result

@@ -72,6 +72,9 @@ def _dict_to_chunk(d: dict[str, Any]) -> Chunk:
         parent_context=meta_dict.get("parent_context", ""),
         source_table=meta_dict.get("source_table", ""),
         attributes=attrs,
+        relationship_type=meta_dict.get("relationship_type", ""),
+        target_object_type=meta_dict.get("target_object_type", ""),
+        target_object_name=meta_dict.get("target_object_name", ""),
     )
     return Chunk(
         content=d["content"],

@@ -181,5 +181,6 @@ class TestChunkObjects:
         source1 = read_fixture("simple_enum.al")
         source2 = read_fixture("simple_table.al")
         objs = parse_source(source1) + parse_source(source2)
-        chunks = chunk_objects(objs)
+        config = ChunkingConfig(emit_cross_references=False)
+        chunks = chunk_objects(objs, config)
         assert len(chunks) >= 2

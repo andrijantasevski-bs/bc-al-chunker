@@ -14,6 +14,7 @@ Implements a hierarchical, AST-aware chunking strategy:
 
 from __future__ import annotations
 
+import json
 import re
 
 from bc_al_chunker.config import ChunkingConfig
@@ -233,6 +234,86 @@ def _extract_header(obj: ALObject) -> str:
 
 
 # ---------------------------------------------------------------------------
+# App metadata chunk
+# ---------------------------------------------------------------------------
+
+
+def build_app_metadata_chunk(
+    raw_json: str,
+    config: ChunkingConfig | None = None,
+) -> Chunk | None:
+    """Create an ``app_metadata`` chunk from raw ``app.json`` content.
+
+    The chunk content is a human-readable summary of the extension identity,
+    dependencies, and target BC version — optimised for embedding.
+
+    Args:
+        raw_json: The raw text content of ``app.json``.
+        config: Optional chunking configuration (for token estimation).
+
+    Returns:
+        A single ``Chunk`` or ``None`` if the JSON is invalid.
+    """
+    if config is None:
+        config = ChunkingConfig()
+
+    try:
+        data = json.loads(raw_json)
+    except (json.JSONDecodeError, TypeError):
+        return None
+
+    if not isinstance(data, dict):
+        return None
+
+    lines: list[str] = ["// App Metadata"]
+    _name = data.get("name", "")
+    if _name:
+        lines.append(f"// Name: {_name}")
+    if data.get("publisher"):
+        lines.append(f"// Publisher: {data['publisher']}")
+    if data.get("version"):
+        lines.append(f"// Version: {data['version']}")
+    if data.get("id"):
+        lines.append(f"// ID: {data['id']}")
+    if data.get("application"):
+        lines.append(f"// Application: {data['application']}")
+    if data.get("platform"):
+        lines.append(f"// Platform: {data['platform']}")
+    if data.get("runtime"):
+        lines.append(f"// Runtime: {data['runtime']}")
+
+    deps = data.get("dependencies", [])
+    if deps and isinstance(deps, list):
+        lines.append("// Dependencies:")
+        for dep in deps:
+            if isinstance(dep, dict):
+                dep_name = dep.get("name", dep.get("id", "?"))
+                dep_pub = dep.get("publisher", "")
+                dep_ver = dep.get("version", "")
+                parts = [f'"{dep_name}"']
+                if dep_pub:
+                    parts.append(f"by {dep_pub}")
+                if dep_ver:
+                    parts.append(f"({dep_ver})")
+                lines.append(f"//   - {' '.join(parts)}")
+
+    content = "\n".join(lines)
+    return Chunk(
+        content=content,
+        metadata=ChunkMetadata(
+            file_path="app.json",
+            object_type="app",
+            object_id=0,
+            object_name=_name or "app",
+            chunk_type=ChunkType.APP_METADATA.value,
+            line_start=1,
+            line_end=content.count("\n") + 1,
+        ),
+        token_estimate=_estimate_tokens(content) if config.estimate_tokens else 0,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -346,11 +427,17 @@ def chunk_objects(objects: list[ALObject], config: ChunkingConfig | None = None)
         config: Chunking configuration.
 
     Returns:
-        A flat list of all chunks.
+        A flat list of all chunks, optionally followed by cross-reference chunks.
     """
     if config is None:
         config = ChunkingConfig()
     result: list[Chunk] = []
     for obj in objects:
         result.extend(chunk_object(obj, config))
+
+    if config.emit_cross_references:
+        from bc_al_chunker.cross_references import build_cross_reference_chunks
+
+        result.extend(build_cross_reference_chunks(objects, config))
+
     return result

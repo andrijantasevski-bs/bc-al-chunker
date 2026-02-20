@@ -38,6 +38,8 @@ class ChunkType(enum.StrEnum):
     SECTION = "section"
     PROCEDURE = "procedure"
     TRIGGER = "trigger"
+    APP_METADATA = "app_metadata"
+    CROSS_REFERENCE = "cross_reference"
 
 
 @dataclass(slots=True)
@@ -87,6 +89,7 @@ class ALObject:
     line_start: int
     line_end: int
     extends: str = ""
+    implements: list[str] = field(default_factory=list)
     properties: list[ALProperty] = field(default_factory=list)
     sections: list[ALSection] = field(default_factory=list)
     procedures: list[ALProcedure] = field(default_factory=list)
@@ -109,6 +112,9 @@ class ChunkMetadata:
     parent_context: str = ""
     source_table: str = ""
     attributes: tuple[str, ...] = ()
+    relationship_type: str = ""
+    target_object_type: str = ""
+    target_object_name: str = ""
 
 
 @dataclass(slots=True, frozen=True)

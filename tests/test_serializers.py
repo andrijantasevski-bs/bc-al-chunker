@@ -87,3 +87,55 @@ class TestJsonlSerialization:
         loaded = chunks_from_json(out)
         # attributes should be a tuple after deserialization
         assert isinstance(loaded[0].metadata.attributes, tuple)
+
+    def test_cross_reference_fields_roundtrip(self, tmp_path: Path) -> None:
+        """Cross-reference metadata fields survive a JSON roundtrip."""
+        from bc_al_chunker.models import Chunk, ChunkMetadata, ChunkType
+
+        xref = Chunk(
+            content="tableextension extends table",
+            metadata=ChunkMetadata(
+                file_path="ext.al",
+                object_type="tableextension",
+                object_id=50100,
+                object_name="Customer Ext",
+                chunk_type=ChunkType.CROSS_REFERENCE.value,
+                line_start=1,
+                line_end=10,
+                extends="Customer",
+                relationship_type="extends_table",
+                target_object_type="table",
+                target_object_name="Customer",
+            ),
+            token_estimate=10,
+        )
+        out = tmp_path / "xref.json"
+        chunks_to_json([xref], out)
+        loaded = chunks_from_json(out)
+        assert len(loaded) == 1
+        assert loaded[0].metadata.relationship_type == "extends_table"
+        assert loaded[0].metadata.target_object_type == "table"
+        assert loaded[0].metadata.target_object_name == "Customer"
+
+    def test_app_metadata_roundtrip(self, tmp_path: Path) -> None:
+        """App metadata chunk survives a JSON roundtrip."""
+        from bc_al_chunker.models import Chunk, ChunkMetadata, ChunkType
+
+        app = Chunk(
+            content="// App Metadata\n// Name: Test",
+            metadata=ChunkMetadata(
+                file_path="app.json",
+                object_type="app",
+                object_id=0,
+                object_name="Test",
+                chunk_type=ChunkType.APP_METADATA.value,
+                line_start=1,
+                line_end=2,
+            ),
+            token_estimate=5,
+        )
+        out = tmp_path / "app.json"
+        chunks_to_json([app], out)
+        loaded = chunks_from_json(out)
+        assert len(loaded) == 1
+        assert loaded[0].metadata.chunk_type == ChunkType.APP_METADATA

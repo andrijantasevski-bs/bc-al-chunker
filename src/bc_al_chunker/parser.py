@@ -60,10 +60,13 @@ _RE_OBJECT_HEADER = re.compile(
     (?:(?P<id>\d+)\s+)?                         # optional numeric ID
     (?P<name>"[^"]*"|[A-Za-z_]\w*)              # quoted or simple name
     (?:\s+extends\s+(?P<extends>"[^"]*"|[A-Za-z_]\w*))? # optional extends
+    (?:\s+implements\s+(?P<implements>"[^"]*"(?:\s*,\s*"[^"]*")*))? # optional implements
     \s*$                                        # up to EOL
     """,
     re.IGNORECASE | re.MULTILINE | re.VERBOSE,
 )
+
+_RE_IMPLEMENTS_SPLIT = re.compile(r'"([^"]+)"')
 
 # Sections that appear as top-level blocks inside objects.
 _SECTION_KEYWORDS: frozenset[str] = frozenset(
@@ -120,6 +123,13 @@ def _unquote(name: str) -> str:
     if name.startswith('"') and name.endswith('"'):
         return name[1:-1]
     return name
+
+
+def _parse_implements(raw: str | None) -> list[str]:
+    """Parse the ``implements`` clause into a list of interface names."""
+    if not raw:
+        return []
+    return _RE_IMPLEMENTS_SPLIT.findall(raw)
 
 
 def _line_number(source: str, index: int) -> int:
@@ -392,6 +402,7 @@ def parse_source(source: str, *, file_path: str = "") -> list[ALObject]:
         obj_id = int(hdr.group("id")) if hdr.group("id") else 0
         obj_name = _unquote(hdr.group("name"))
         extends = _unquote(hdr.group("extends")) if hdr.group("extends") else ""
+        implements = _parse_implements(hdr.group("implements"))
 
         # Find opening brace of the object body.
         brace_start = source.find("{", hdr.end())
@@ -419,6 +430,7 @@ def parse_source(source: str, *, file_path: str = "") -> list[ALObject]:
                 line_start=_line_number(source, hdr.start()),
                 line_end=_line_number(source, brace_end),
                 extends=extends,
+                implements=implements,
                 properties=props,
                 sections=sections,
                 procedures=procs,

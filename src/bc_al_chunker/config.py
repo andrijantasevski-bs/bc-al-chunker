@@ -18,9 +18,16 @@ class ChunkingConfig:
             sub-object chunks so each chunk is self-contained. Default True.
         estimate_tokens: Whether to compute a token estimate on each chunk.
             Uses the chars/4 heuristic. Default True.
+        emit_app_metadata: Whether to emit an ``app_metadata`` chunk from
+            ``app.json`` when available.  Default True.
+        emit_cross_references: Whether to emit ``cross_reference`` chunks that
+            capture relationships (extends, implements, event subscriptions)
+            across objects.  Default True.
     """
 
     max_chunk_chars: int = 1500
     min_chunk_chars: int = 100
     include_context_header: bool = True
     estimate_tokens: bool = True
+    emit_app_metadata: bool = True
+    emit_cross_references: bool = True

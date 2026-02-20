@@ -106,3 +106,19 @@ class GitHubAdapter:
         resp = client.get(url, headers=headers)
         resp.raise_for_status()
         return str(resp.text)
+
+    # ---- app.json ----
+
+    def get_app_json_sync(self) -> str | None:
+        """Fetch ``app.json`` from the repository root, if it exists."""
+        try:
+            import httpx
+        except ImportError:
+            return None
+
+        with httpx.Client(http2=True, timeout=30.0) as client:
+            tree = self._fetch_tree(client)
+            for item in tree:
+                if item["path"].lower() == "app.json":
+                    return self._fetch_blob(client, item["sha"])
+        return None

@@ -83,6 +83,28 @@ class TestObjectDetection:
         assert obj.object_id == 0  # interfaces have no ID
         assert obj.object_name == "IAddress Provider"
 
+    def test_parse_implements_single(self) -> None:
+        source = read_fixture("codeunit_implements.al")
+        objects = parse_source(source, file_path="codeunit_implements.al")
+        assert len(objects) == 1
+        obj = objects[0]
+        assert obj.object_type == ALObjectType.CODEUNIT
+        assert obj.object_id == 50101
+        assert obj.object_name == "Address Provider"
+        assert obj.implements == ["IAddress Provider"]
+
+    def test_parse_implements_multiple(self) -> None:
+        source = read_fixture("codeunit_multi_implements.al")
+        objects = parse_source(source, file_path="codeunit_multi_implements.al")
+        assert len(objects) == 1
+        obj = objects[0]
+        assert obj.implements == ["IAddress Provider", "INotification Service"]
+
+    def test_no_implements_by_default(self) -> None:
+        source = read_fixture("large_codeunit.al")
+        obj = parse_source(source)[0]
+        assert obj.implements == []
+
     def test_parse_query(self) -> None:
         source = read_fixture("query.al")
         objects = parse_source(source, file_path="query.al")
