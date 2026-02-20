@@ -68,16 +68,16 @@ Dependencies flow strictly downward. Adapters are fully independent of the core.
 
 All types use `@dataclass(slots=True)`. Value objects use `frozen=True`.
 
-| Type | Purpose |
-|---|---|
-| `ALObjectType` | `StrEnum` — 19 BC object types (e.g. `"table"`, `"pageextension"`) |
-| `ChunkType` | `StrEnum` — `WHOLE_OBJECT`, `HEADER`, `SECTION`, `PROCEDURE`, `TRIGGER` |
-| `ALProperty` | Name/value pair with line range |
-| `ALSection` | Named section (fields, layout, actions, etc.) with optional children |
-| `ALProcedure` | Procedure/trigger with access modifier, attributes, return type |
-| `ALObject` | Complete parsed AL object (the AST root) |
-| `ChunkMetadata` | Frozen — rich metadata for each chunk (object info, line range, attributes) |
-| `Chunk` | Frozen — `content` + `metadata` + `token_estimate` (the embedding-ready output) |
+| Type            | Purpose                                                                         |
+| --------------- | ------------------------------------------------------------------------------- |
+| `ALObjectType`  | `StrEnum` — 19 BC object types (e.g. `"table"`, `"pageextension"`)              |
+| `ChunkType`     | `StrEnum` — `WHOLE_OBJECT`, `HEADER`, `SECTION`, `PROCEDURE`, `TRIGGER`         |
+| `ALProperty`    | Name/value pair with line range                                                 |
+| `ALSection`     | Named section (fields, layout, actions, etc.) with optional children            |
+| `ALProcedure`   | Procedure/trigger with access modifier, attributes, return type                 |
+| `ALObject`      | Complete parsed AL object (the AST root)                                        |
+| `ChunkMetadata` | Frozen — rich metadata for each chunk (object info, line range, attributes)     |
+| `Chunk`         | Frozen — `content` + `metadata` + `token_estimate` (the embedding-ready output) |
 
 ### Parser (parser.py)
 
@@ -101,6 +101,7 @@ Hierarchical, size-gated splitting:
 ### Adapters
 
 `FileSource` is a `@runtime_checkable` Protocol with:
+
 - `iter_al_files_sync() -> list[tuple[str, str]]` (synchronous)
 - `iter_al_files() -> AsyncIterator[tuple[str, str]]` (async)
 
