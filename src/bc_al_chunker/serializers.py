@@ -75,6 +75,7 @@ def _dict_to_chunk(d: dict[str, Any]) -> Chunk:
         relationship_type=meta_dict.get("relationship_type", ""),
         target_object_type=meta_dict.get("target_object_type", ""),
         target_object_name=meta_dict.get("target_object_name", ""),
+        file_hash=meta_dict.get("file_hash", ""),
     )
     return Chunk(
         content=d["content"],

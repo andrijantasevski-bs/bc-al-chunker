@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from bc_al_chunker.models import ALObjectType
-from bc_al_chunker.parser import parse_source
+from bc_al_chunker.parser import hash_source, parse_source
 
 from .conftest import read_fixture
 
@@ -254,3 +254,59 @@ class TestEdgeCases:
         assert obj.line_end > obj.line_start
         for proc in obj.procedures:
             assert proc.line_start >= 1
+
+
+class TestFileHash:
+    """Tests for the file_hash field populated by parse_source / hash_source."""
+
+    def test_hash_source_returns_16_char_hex(self) -> None:
+        """BLAKE2b digest_size=8 always produces a 16-character lowercase hex string."""
+        h = hash_source('table 50100 "Foo" {}')
+        assert len(h) == 16
+        assert h == h.lower()
+        assert all(c in "0123456789abcdef" for c in h)
+
+    def test_same_content_same_hash(self) -> None:
+        source = read_fixture("simple_table.al")
+        assert hash_source(source) == hash_source(source)
+
+    def test_different_content_different_hash(self) -> None:
+        source1 = read_fixture("simple_table.al")
+        source2 = read_fixture("simple_enum.al")
+        assert hash_source(source1) != hash_source(source2)
+
+    def test_hash_stable_with_or_without_bom(self) -> None:
+        """BOM-prefixed and plain source should produce the same hash."""
+        source = read_fixture("simple_table.al")
+        bom_source = "\ufeff" + source
+        assert hash_source(source) == hash_source(bom_source)
+
+    def test_parse_source_populates_file_hash(self) -> None:
+        source = read_fixture("simple_table.al")
+        obj = parse_source(source, file_path="simple_table.al")[0]
+        assert len(obj.file_hash) == 16
+        assert obj.file_hash == hash_source(source)
+
+    def test_all_objects_share_file_hash(self) -> None:
+        """Multiple objects parsed from one source share the same file_hash."""
+        source = read_fixture("codeunit_implements.al")
+        objects = parse_source(source, file_path="codeunit_implements.al")
+        assert len(objects) >= 1
+        first_hash = objects[0].file_hash
+        assert all(obj.file_hash == first_hash for obj in objects)
+
+    def test_empty_source_has_hash(self) -> None:
+        """Even empty source produces a valid hash (no crash)."""
+        h = hash_source("")
+        assert len(h) == 16
+
+    def test_parse_file_populates_file_hash(self, tmp_path) -> None:
+        """parse_file should produce the same file_hash as hash_source on the same text."""
+        from bc_al_chunker.parser import parse_file
+
+        source = read_fixture("simple_enum.al")
+        al_file = tmp_path / "simple_enum.al"
+        al_file.write_text(source, encoding="utf-8")
+        objs = parse_file(str(al_file))
+        assert len(objs) == 1
+        assert objs[0].file_hash == hash_source(source)

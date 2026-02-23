@@ -93,6 +93,7 @@ class ALObject:
     properties: list[ALProperty] = field(default_factory=list)
     sections: list[ALSection] = field(default_factory=list)
     procedures: list[ALProcedure] = field(default_factory=list)
+    file_hash: str = ""
 
 
 @dataclass(slots=True, frozen=True)
@@ -115,6 +116,7 @@ class ChunkMetadata:
     relationship_type: str = ""
     target_object_type: str = ""
     target_object_name: str = ""
+    file_hash: str = ""
 
 
 @dataclass(slots=True, frozen=True)

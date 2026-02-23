@@ -109,6 +109,7 @@ def _make_chunk(
             parent_context=context_header,
             source_table=_get_source_table(obj),
             attributes=attributes,
+            file_hash=obj.file_hash,
         ),
         token_estimate=_estimate_tokens(full_content) if config.estimate_tokens else 0,
     )

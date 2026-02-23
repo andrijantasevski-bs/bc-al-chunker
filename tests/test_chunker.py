@@ -184,3 +184,54 @@ class TestChunkObjects:
         config = ChunkingConfig(emit_cross_references=False)
         chunks = chunk_objects(objs, config)
         assert len(chunks) >= 2
+
+
+class TestFileHashPropagation:
+    """Verify that file_hash from ALObject is propagated to every chunk's metadata."""
+
+    def test_whole_object_chunk_has_file_hash(self) -> None:
+        from bc_al_chunker.parser import hash_source
+
+        source = read_fixture("simple_enum.al")
+        obj = parse_source(source, file_path="simple_enum.al")[0]
+        chunks = chunk_object(obj)
+        assert len(chunks) == 1
+        assert chunks[0].metadata.file_hash == hash_source(source)
+
+    def test_split_chunks_all_carry_file_hash(self) -> None:
+        source = read_fixture("large_codeunit.al")
+        obj = parse_source(source, file_path="large_codeunit.al")[0]
+        config = ChunkingConfig(max_chunk_chars=200, emit_cross_references=False)
+        chunks = chunk_object(obj, config)
+        assert len(chunks) > 1
+        expected_hash = obj.file_hash
+        for c in chunks:
+            assert c.metadata.file_hash == expected_hash, (
+                f"Chunk {c.metadata.chunk_type!r} missing or wrong file_hash"
+            )
+
+    def test_file_hash_non_empty(self) -> None:
+        source = read_fixture("simple_table.al")
+        obj = parse_source(source)[0]
+        chunks = chunk_object(obj)
+        assert chunks[0].metadata.file_hash != ""
+
+    def test_different_files_have_different_hashes(self) -> None:
+        source1 = read_fixture("simple_table.al")
+        source2 = read_fixture("simple_enum.al")
+        obj1 = parse_source(source1, file_path="simple_table.al")[0]
+        obj2 = parse_source(source2, file_path="simple_enum.al")[0]
+        chunks1 = chunk_object(obj1)
+        chunks2 = chunk_object(obj2)
+        assert chunks1[0].metadata.file_hash != chunks2[0].metadata.file_hash
+
+    def test_cross_reference_chunks_carry_file_hash(self) -> None:
+        source = read_fixture("table_extension.al")
+        objs = parse_source(source, file_path="table_extension.al")
+        config = ChunkingConfig(emit_cross_references=True)
+        chunks = chunk_objects(objs, config)
+        xref_chunks = [c for c in chunks if c.metadata.chunk_type == ChunkType.CROSS_REFERENCE]
+        assert len(xref_chunks) >= 1
+        for c in xref_chunks:
+            assert c.metadata.file_hash != ""
+            assert c.metadata.file_hash == objs[0].file_hash

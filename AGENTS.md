@@ -68,16 +68,16 @@ Dependencies flow strictly downward. Adapters are fully independent of the core.
 
 All types use `@dataclass(slots=True)`. Value objects use `frozen=True`.
 
-| Type            | Purpose                                                                         |
-| --------------- | ------------------------------------------------------------------------------- |
-| `ALObjectType`  | `StrEnum` — 19 BC object types (e.g. `"table"`, `"pageextension"`)              |
-| `ChunkType`     | `StrEnum` — `WHOLE_OBJECT`, `HEADER`, `SECTION`, `PROCEDURE`, `TRIGGER`         |
-| `ALProperty`    | Name/value pair with line range                                                 |
-| `ALSection`     | Named section (fields, layout, actions, etc.) with optional children            |
-| `ALProcedure`   | Procedure/trigger with access modifier, attributes, return type                 |
-| `ALObject`      | Complete parsed AL object (the AST root)                                        |
-| `ChunkMetadata` | Frozen — rich metadata for each chunk (object info, line range, attributes)     |
-| `Chunk`         | Frozen — `content` + `metadata` + `token_estimate` (the embedding-ready output) |
+| Type            | Purpose                                                                                  |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| `ALObjectType`  | `StrEnum` — 19 BC object types (e.g. `"table"`, `"pageextension"`)                       |
+| `ChunkType`     | `StrEnum` — `WHOLE_OBJECT`, `HEADER`, `SECTION`, `PROCEDURE`, `TRIGGER`                  |
+| `ALProperty`    | Name/value pair with line range                                                          |
+| `ALSection`     | Named section (fields, layout, actions, etc.) with optional children                     |
+| `ALProcedure`   | Procedure/trigger with access modifier, attributes, return type                          |
+| `ALObject`      | Complete parsed AL object (the AST root); includes `file_hash` (BLAKE2b hex)             |
+| `ChunkMetadata` | Frozen — rich metadata for each chunk (object info, line range, attributes, `file_hash`) |
+| `Chunk`         | Frozen — `content` + `metadata` + `token_estimate` (the embedding-ready output)          |
 
 ### Parser (parser.py)
 
@@ -87,7 +87,7 @@ The parser uses **regex + brace-matching** with no external dependencies:
 2. **Brace-block resolution** — Correctly skips AL string literals (`'...'`), line/block comments, and quoted identifiers (`"..."`)
 3. **Section extraction** — Matches top-level section keywords (`fields`, `keys`, `layout`, `actions`, `views`, `dataset`, etc.)
 4. **Procedure/trigger extraction** — Matches attributes, access modifiers, `procedure`/`trigger` keywords; resolves body via nested `begin`/`end` tracking
-5. **Property extraction** — Matches `Name = Value;` lines, filtering out matches inside sections/procedures
+5. **Property extraction** — Matches `Name = Value;` lines, filtering out matches inside sections/procedures6. **File hashing** — `hash_source()` computes a 16-character BLAKE2b hex digest (8-byte, stdlib `hashlib`) of the BOM-stripped source; called automatically inside `parse_source()` and stored on every `ALObject.file_hash`
 
 ### Chunker (chunker.py)
 

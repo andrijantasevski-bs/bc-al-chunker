@@ -139,6 +139,7 @@ def _make_xref_chunk(
             relationship_type=relationship_type,
             target_object_type=target_object_type,
             target_object_name=target_object_name,
+            file_hash=source_obj.file_hash,
         ),
         token_estimate=_estimate_tokens(description) if config.estimate_tokens else 0,
     )

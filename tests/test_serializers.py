@@ -139,3 +139,41 @@ class TestJsonlSerialization:
         loaded = chunks_from_json(out)
         assert len(loaded) == 1
         assert loaded[0].metadata.chunk_type == ChunkType.APP_METADATA
+
+
+class TestFileHashSerialization:
+    """Verify that file_hash survives JSON / JSONL roundtrips."""
+
+    def test_file_hash_present_in_dict(self) -> None:
+        chunks = _make_chunks()
+        d = chunks_to_dicts(chunks)[0]
+        assert "file_hash" in d["metadata"]
+        assert len(d["metadata"]["file_hash"]) == 16
+
+    def test_file_hash_roundtrip_json(self, tmp_path: Path) -> None:
+        chunks = _make_chunks()
+        original_hash = chunks[0].metadata.file_hash
+        out = tmp_path / "chunks.json"
+        chunks_to_json(chunks, out)
+        loaded = chunks_from_json(out)
+        assert loaded[0].metadata.file_hash == original_hash
+
+    def test_file_hash_roundtrip_jsonl(self, tmp_path: Path) -> None:
+        chunks = _make_chunks()
+        original_hash = chunks[0].metadata.file_hash
+        out = tmp_path / "chunks.jsonl"
+        chunks_to_jsonl(chunks, out)
+        loaded = chunks_from_jsonl(out)
+        assert loaded[0].metadata.file_hash == original_hash
+
+    def test_missing_file_hash_defaults_to_empty_string(self, tmp_path: Path) -> None:
+        """Legacy JSON files without file_hash should deserialize without error."""
+        import json
+
+        chunks = _make_chunks()
+        d = chunks_to_dicts(chunks)[0]
+        del d["metadata"]["file_hash"]
+        out = tmp_path / "legacy.json"
+        out.write_text(json.dumps([d]), encoding="utf-8")
+        loaded = chunks_from_json(out)
+        assert loaded[0].metadata.file_hash == ""

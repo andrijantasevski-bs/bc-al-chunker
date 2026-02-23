@@ -135,6 +135,31 @@ Each `Chunk` contains:
   - `source_table` — extracted from page/codeunit properties
   - `attributes` — e.g., `[EventSubscriber(...)]`
   - `line_start`, `line_end`
+  - `file_hash` — 16-character BLAKE2b hex digest of the source file content; use this to detect whether a file has changed before re-embedding
+
+### Detecting file changes with `file_hash`
+
+Every chunk carries a `file_hash` computed from the file's source text using
+BLAKE2b (8-byte digest — the fastest built-in hash algorithm in Python's
+`hashlib`). Because the hash is derived from the normalized (BOM-stripped)
+UTF-8 content, it is stable regardless of encoding variants.
+
+```python
+from bc_al_chunker import chunk, hash_source
+
+chunks = chunk("/path/to/al-repo")
+
+# Group chunks by file; all chunks from the same file share the same hash
+file_hashes = {c.metadata.file_path: c.metadata.file_hash for c in chunks}
+
+# Later — re-read a file and compare before doing expensive work
+with open("MyTable.al", encoding="utf-8-sig") as f:
+    current_hash = hash_source(f.read())
+
+if current_hash != file_hashes.get("MyTable.al"):
+    # File changed — re-chunk and re-embed
+    ...
+```
 
 ## Development
 

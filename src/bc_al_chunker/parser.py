@@ -7,6 +7,7 @@ nested braces, string literals, comments, and preprocessor directives.
 
 from __future__ import annotations
 
+import hashlib
 import re
 from typing import TYPE_CHECKING
 
@@ -378,6 +379,28 @@ def _normalize_object_type(raw: str) -> ALObjectType:
     return ALObjectType(raw.lower().replace(" ", ""))
 
 
+def hash_source(source: str) -> str:
+    """Compute a fast content hash of AL source text.
+
+    Uses BLAKE2b with an 8-byte (64-bit) digest — the fastest built-in hash
+    algorithm in Python's :mod:`hashlib`.  The resulting 16-character hex
+    string is compact and sufficient for file-change detection across hundreds
+    or thousands of files.
+
+    The hash is computed on the BOM-stripped, UTF-8-encoded source so the
+    value is identical regardless of whether the caller stripped the BOM.
+
+    Args:
+        source: AL source text (with or without leading BOM).
+
+    Returns:
+        A 16-character lowercase hex string.
+    """
+    if source.startswith("\ufeff"):
+        source = source[1:]
+    return hashlib.blake2b(source.encode("utf-8"), digest_size=8).hexdigest()
+
+
 def parse_source(source: str, *, file_path: str = "") -> list[ALObject]:
     """Parse AL source code and return a list of ``ALObject`` instances.
 
@@ -394,6 +417,8 @@ def parse_source(source: str, *, file_path: str = "") -> list[ALObject]:
     # Strip BOM.
     if source.startswith("\ufeff"):
         source = source[1:]
+
+    file_hash = hashlib.blake2b(source.encode("utf-8"), digest_size=8).hexdigest()
 
     objects: list[ALObject] = []
 
@@ -434,6 +459,7 @@ def parse_source(source: str, *, file_path: str = "") -> list[ALObject]:
                 properties=props,
                 sections=sections,
                 procedures=procs,
+                file_hash=file_hash,
             )
         )
 

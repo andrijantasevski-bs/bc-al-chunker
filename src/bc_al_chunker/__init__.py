@@ -40,7 +40,7 @@ from bc_al_chunker.models import (
     ChunkMetadata,
     ChunkType,
 )
-from bc_al_chunker.parser import parse_file, parse_files, parse_source
+from bc_al_chunker.parser import hash_source, parse_file, parse_files, parse_source
 from bc_al_chunker.serializers import (
     chunks_from_json,
     chunks_from_jsonl,
@@ -73,6 +73,7 @@ __all__ = [
     "chunks_to_dicts",
     "chunks_to_json",
     "chunks_to_jsonl",
+    "hash_source",
     "parse_file",
     "parse_files",
     "parse_source",
